@@ -1,5 +1,18 @@
 # MacClean Lens
 
+MacClean Lens is a lightweight macOS disk cleanup assistant installed with npm.
+
+```bash
+npm install -g mac-clean-lens
+mac-clean-lens
+```
+
+Install the native Launchpad app after installing the npm package:
+
+```bash
+mac-clean-lens-install
+```
+
 Before it is published to npm, install this local build with:
 
 ```bash
@@ -30,6 +43,7 @@ mac-clean-lens              # open visual UI
 mac-clean-lens --port 3900  # open UI on a fixed port
 mac-clean-lens --no-open    # start server without opening a browser
 mac-clean-lens scan --json  # print scan report JSON
+mac-clean-lens-install      # install the native Launchpad app
 npm run build:mac           # build dist/MacClean Lens.app
 npm run install:mac         # install the app for Launchpad
 ```

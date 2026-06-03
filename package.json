@@ -4,7 +4,8 @@
   "description": "A lightweight visual macOS cleanup scanner installed with npm.",
   "type": "module",
   "bin": {
-    "mac-clean-lens": "./bin/mac-clean-lens.mjs"
+    "mac-clean-lens": "./bin/mac-clean-lens.mjs",
+    "mac-clean-lens-install": "./scripts/install-macos-app.mjs"
   },
   "files": [
     "bin/",
@@ -26,8 +27,19 @@
     "disk",
     "scanner"
   ],
-  "author": "",
+  "author": "jinweijian <jinweijian@edusoho.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/jinweijian/MacCleanLens.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jinweijian/MacCleanLens/issues"
+  },
+  "homepage": "https://github.com/jinweijian/MacCleanLens#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=16.17"
   }

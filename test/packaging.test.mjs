@@ -7,6 +7,7 @@ test('npm exposes macOS build and install scripts', async () => {
 
   assert.equal(pkg.scripts['build:mac'], 'node ./scripts/build-macos-app.mjs');
   assert.equal(pkg.scripts['install:mac'], 'node ./scripts/install-macos-app.mjs');
+  assert.equal(pkg.bin['mac-clean-lens-install'], './scripts/install-macos-app.mjs');
 });
 
 test('macOS build script packages an icon and signs the bundle', async () => {
