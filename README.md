@@ -1,16 +1,9 @@
 # MacClean Lens
 
-MacClean Lens is a lightweight macOS disk cleanup assistant installed with npm.
-
-```bash
-npm install -g mac-clean-lens
-mac-clean-lens
-```
-
 Before it is published to npm, install this local build with:
 
 ```bash
-npm install -g /Users/kz/website/mac-clean-lens
+npm install -g ./
 mac-clean-lens
 ```
 
