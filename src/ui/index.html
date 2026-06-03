@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MacClean Lens</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div id="globalOverlay" class="global-overlay" hidden>
+      <div class="overlay-card">
+        <strong id="overlayTitle">正在扫描</strong>
+        <p id="overlayLabel">准备读取磁盘占用</p>
+        <div class="overlay-progress">
+          <span id="overlayProgressBar"></span>
+        </div>
+        <small id="overlayPercent">0%</small>
+      </div>
+    </div>
+
+    <main class="shell">
+      <section class="content">
+        <header class="toolbar">
+          <div class="brand">
+            <span class="brand-mark"></span>
+            <div>
+              <p class="eyebrow">本机扫描</p>
+              <h1>MacClean Lens</h1>
+            </div>
+          </div>
+          <button id="scanButton" class="primary">开始扫描</button>
+        </header>
+
+        <section class="summary-grid">
+          <article class="summary-card filter-card active" data-filter="all" role="button" tabindex="0">
+            <span>预计可释放</span>
+            <strong id="cleanableSize">--</strong>
+            <small>低风险与需确认项目合计</small>
+          </article>
+          <article class="summary-card filter-card active" data-filter="all" role="button" tabindex="0">
+            <span>扫描项目</span>
+            <strong id="findingCount">--</strong>
+            <small id="scanTime">等待扫描</small>
+          </article>
+          <article class="summary-card">
+            <span>磁盘剩余</span>
+            <strong id="availableSize">--</strong>
+            <small id="capacityLabel">--</small>
+          </article>
+        </section>
+
+        <section class="category-row" id="categories"></section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>扫描结果</h2>
+              <p>只勾选你确认要移动到废纸篓的项目。</p>
+            </div>
+            <label class="toggle">
+              <input id="safeOnly" type="checkbox" checked>
+              仅显示可清理
+            </label>
+          </div>
+          <div id="findings" class="findings">
+            <div class="empty">点击“开始扫描”查看可清理内容。</div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="action-bar" hidden>
+      <div class="action-info">
+        <div>
+          <strong id="selectedSize">已选择 0 B</strong>
+          <span id="actionHint">清理会先移动到废纸篓，清空废纸篓后才真正释放空间。</span>
+        </div>
+        <div id="cleanProgress" class="progress-wrap" hidden>
+          <div class="progress-meta">
+            <span id="cleanProgressLabel">准备清理</span>
+            <span id="cleanProgressValue">0%</span>
+          </div>
+          <div class="progress-track">
+            <span id="cleanProgressBar"></span>
+          </div>
+        </div>
+        <div id="cleanStatus" class="action-message" hidden></div>
+      </div>
+      <div class="action-buttons">
+        <button id="cleanButton" class="danger" disabled>立即清理</button>
+      </div>
+    </footer>
+
+    <dialog id="celebrationDialog" class="celebration-dialog">
+      <div id="confettiLayer" class="confetti-layer" aria-hidden="true"></div>
+      <div class="celebration-card">
+        <span class="celebration-icon">✓</span>
+        <h2>清理已完成</h2>
+        <p id="celebrationSummary">选中的项目已移动到废纸篓。</p>
+        <p class="next-step">下一步：打开废纸篓检查内容。确认无误后清空废纸篓，磁盘空间才会真正释放；如果发现误删，可以从废纸篓拖回。</p>
+        <button id="celebrationClose" class="primary">知道了</button>
+      </div>
+    </dialog>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

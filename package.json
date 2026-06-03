@@ -1,0 +1,34 @@
+{
+  "name": "mac-clean-lens",
+  "version": "0.1.0",
+  "description": "A lightweight visual macOS cleanup scanner installed with npm.",
+  "type": "module",
+  "bin": {
+    "mac-clean-lens": "./bin/mac-clean-lens.mjs"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node ./bin/mac-clean-lens.mjs",
+    "scan": "node ./bin/mac-clean-lens.mjs scan --json",
+    "build:mac": "node ./scripts/build-macos-app.mjs",
+    "install:mac": "node ./scripts/install-macos-app.mjs",
+    "test": "node --test"
+  },
+  "keywords": [
+    "macos",
+    "cleanup",
+    "disk",
+    "scanner"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.17"
+  }
+}
