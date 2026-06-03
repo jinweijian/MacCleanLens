@@ -74,31 +74,30 @@ let size = NSSize(width: 1024, height: 1024)
 let image = NSImage(size: size)
 
 image.lockFocus()
-NSColor(calibratedRed: 0.94, green: 0.97, blue: 1.0, alpha: 1).setFill()
-NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: 1024, height: 1024), xRadius: 220, yRadius: 220).fill()
+let tile = NSRect(x: 132, y: 132, width: 760, height: 760)
 
 let gradient = NSGradient(colors: [
   NSColor(calibratedRed: 0.13, green: 0.46, blue: 1.0, alpha: 1),
   NSColor(calibratedRed: 0.04, green: 0.62, blue: 0.43, alpha: 1)
 ])!
-gradient.draw(in: NSBezierPath(roundedRect: NSRect(x: 96, y: 96, width: 832, height: 832), xRadius: 190, yRadius: 190), angle: 135)
+gradient.draw(in: NSBezierPath(roundedRect: tile, xRadius: 176, yRadius: 176), angle: 135)
 
 NSColor.white.withAlphaComponent(0.95).setStroke()
-let lens = NSBezierPath(ovalIn: NSRect(x: 278, y: 404, width: 300, height: 300))
-lens.lineWidth = 58
+let lens = NSBezierPath(ovalIn: NSRect(x: 338, y: 452, width: 248, height: 248))
+lens.lineWidth = 50
 lens.stroke()
 
 let handle = NSBezierPath()
-handle.lineWidth = 64
+handle.lineWidth = 56
 handle.lineCapStyle = .round
-handle.move(to: NSPoint(x: 548, y: 392))
-handle.line(to: NSPoint(x: 724, y: 216))
+handle.move(to: NSPoint(x: 568, y: 432))
+handle.line(to: NSPoint(x: 706, y: 294))
 handle.stroke()
 
 NSColor.white.withAlphaComponent(0.86).setFill()
-for (index, height) in [96, 142, 216].enumerated() {
-  let rect = NSRect(x: 294 + index * 120, y: 238, width: 70, height: height)
-  NSBezierPath(roundedRect: rect, xRadius: 28, yRadius: 28).fill()
+for (index, height) in [74, 112, 164].enumerated() {
+  let rect = NSRect(x: 340 + index * 98, y: 290, width: 56, height: height)
+  NSBezierPath(roundedRect: rect, xRadius: 22, yRadius: 22).fill()
 }
 
 let rep = NSBitmapImageRep(focusedViewRect: NSRect(x: 0, y: 0, width: 1024, height: 1024))!
