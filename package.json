@@ -4,8 +4,8 @@
   "description": "A lightweight visual macOS cleanup scanner installed with npm.",
   "type": "module",
   "bin": {
-    "mac-clean-lens": "./bin/mac-clean-lens.mjs",
-    "mac-clean-lens-install": "./scripts/install-macos-app.mjs"
+    "mac-clean-lens": "bin/mac-clean-lens.mjs",
+    "mac-clean-lens-install": "scripts/install-macos-app.mjs"
   },
   "files": [
     "bin/",
