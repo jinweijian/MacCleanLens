@@ -68,13 +68,13 @@ export async function directorySize(path) {
   return total;
 }
 
-export async function fastDirectorySize(path, { timeoutMs = 8000, fallbackOnError = true } = {}) {
+export async function fastDirectorySize(path, { timeoutMs = 8000, fallbackOnError = true, duCommand = 'du' } = {}) {
   if (!(await pathExists(path))) {
     return 0;
   }
 
   try {
-    const { stdout } = await execFileAsync('du', ['-sk', path], {
+    const { stdout } = await execFileAsync(duCommand, ['-sk', path], {
       maxBuffer: 1024 * 1024,
       timeout: timeoutMs,
       killSignal: 'SIGKILL'

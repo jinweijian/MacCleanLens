@@ -12,6 +12,27 @@ const execFileAsync = promisify(execFile);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const appName = 'MacClean Lens.app';
 const builtApp = resolve(root, 'dist', appName);
+const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+async function withSpinner(label, task) {
+  let index = 0;
+  process.stdout.write(`${spinnerFrames[index]} ${label}`);
+  const timer = setInterval(() => {
+    index = (index + 1) % spinnerFrames.length;
+    process.stdout.write(`\r${spinnerFrames[index]} ${label}`);
+  }, 120);
+
+  try {
+    const result = await task();
+    clearInterval(timer);
+    process.stdout.write(`\r✓ ${label}\n`);
+    return result;
+  } catch (error) {
+    clearInterval(timer);
+    process.stdout.write(`\r✕ ${label}\n`);
+    throw error;
+  }
+}
 
 async function canWrite(directory) {
   try {
@@ -35,7 +56,6 @@ async function installInto(applicationsDir) {
   await rm(destination, { recursive: true, force: true });
   await cp(builtApp, destination, { recursive: true });
   await execFileAsync('xattr', ['-dr', 'com.apple.quarantine', destination]).catch(() => {});
-  await registerApp(destination);
   return destination;
 }
 
@@ -54,17 +74,17 @@ async function runBuild() {
 }
 
 async function install() {
-  console.log('[1/3] 正在构建 MacClean Lens 应用...');
+  await withSpinner('[1/3] 正在准备构建流程', async () => {});
   await runBuild();
 
   const systemApplications = '/Applications';
   const userApplications = resolve(homedir(), 'Applications');
   const target = (await canWrite(systemApplications)) ? systemApplications : userApplications;
-  console.log(`[2/3] 正在安装到 ${target}...`);
-  const installedPath = await installInto(target);
+  const installedPath = await withSpinner(`[2/3] 正在安装到 ${target}`, () => installInto(target));
 
-  console.log(`[3/3] 已安装到 ${installedPath}`);
+  await withSpinner('[3/3] 正在注册启动台应用', () => registerApp(installedPath));
   console.log('✓ MacClean Lens 安装完成');
+  console.log(`已安装到 ${installedPath}`);
   console.log('现在可以在启动台搜索 MacClean Lens 打开。');
 }
 

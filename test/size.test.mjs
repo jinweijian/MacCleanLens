@@ -33,12 +33,12 @@ test('fastDirectorySize returns a nonzero disk-usage estimate for existing direc
   assert.equal(await fastDirectorySize(join(root, 'missing')), 0);
 });
 
-test('fastDirectorySize returns zero instead of falling back when command times out', async () => {
+test('fastDirectorySize returns zero instead of falling back when command fails', async () => {
   const root = join(tmpdir(), `mac-clean-lens-timeout-size-${Date.now()}`);
   await mkdir(root, { recursive: true });
   await writeFile(join(root, 'a.bin'), Buffer.alloc(5));
 
-  assert.equal(await fastDirectorySize(root, { timeoutMs: 1, fallbackOnError: false }), 0);
+  assert.equal(await fastDirectorySize(root, { duCommand: 'false', fallbackOnError: false }), 0);
 });
 
 test('pathExists returns false for missing paths', async () => {

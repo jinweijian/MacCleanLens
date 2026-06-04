@@ -5,9 +5,12 @@ import test from 'node:test';
 test('npm exposes macOS build and install scripts', async () => {
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 
+  assert.equal(pkg.version, '0.1.2');
   assert.equal(pkg.scripts['build:mac'], 'node ./scripts/build-macos-app.mjs');
   assert.equal(pkg.scripts['install:mac'], 'node ./scripts/install-macos-app.mjs');
   assert.equal(pkg.bin['mac-clean-lens-install'], 'scripts/install-macos-app.mjs');
+  assert.equal(pkg.bin['mac-clean-lens-update'], 'scripts/update-macos-app.mjs');
+  assert.ok(pkg.files.includes('CHANGELOG.md'));
 });
 
 test('macOS build script packages an icon and signs the bundle', async () => {
@@ -61,9 +64,26 @@ test('macOS install and build scripts continuously report progress', async () =>
   const installScript = await readFile(new URL('../scripts/install-macos-app.mjs', import.meta.url), 'utf8');
   const buildScript = await readFile(new URL('../scripts/build-macos-app.mjs', import.meta.url), 'utf8');
 
-  assert.match(installScript, /stdio:\s*'inherit'/);
-  assert.match(installScript, /\[1\/3\]/);
-  assert.match(installScript, /\[3\/3\]/);
-  assert.match(buildScript, /\[1\/6\]/);
-  assert.match(buildScript, /\[6\/6\]/);
+  assert.match(installScript, /withSpinner/);
+  assert.match(installScript, /setInterval/);
+  assert.match(buildScript, /withSpinner/);
+  assert.match(buildScript, /setInterval/);
+});
+
+test('macOS update command updates the npm package without requiring users to type sudo', async () => {
+  const updateScript = await readFile(new URL('../scripts/update-macos-app.mjs', import.meta.url), 'utf8');
+
+  assert.match(updateScript, /npm/);
+  assert.match(updateScript, /install/);
+  assert.match(updateScript, /mac-clean-lens@latest/);
+  assert.match(updateScript, /administrator privileges/);
+  assert.match(updateScript, /mac-clean-lens-install/);
+});
+
+test('changelog documents the 0.1.2 release', async () => {
+  const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
+
+  assert.match(changelog, /## 0\.1\.2/);
+  assert.match(changelog, /mac-clean-lens-update/);
+  assert.match(changelog, /进度/);
 });

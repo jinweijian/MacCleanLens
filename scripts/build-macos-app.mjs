@@ -17,6 +17,27 @@ const resources = resolve(contents, 'Resources');
 const bundledApp = resolve(resources, 'app');
 const bundledNode = resolve(resources, 'runtime', 'node');
 const iconName = 'MacCleanLens.icns';
+const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+async function withSpinner(label, task) {
+  let index = 0;
+  process.stdout.write(`${spinnerFrames[index]} ${label}`);
+  const timer = setInterval(() => {
+    index = (index + 1) % spinnerFrames.length;
+    process.stdout.write(`\r${spinnerFrames[index]} ${label}`);
+  }, 120);
+
+  try {
+    const result = await task();
+    clearInterval(timer);
+    process.stdout.write(`\r✓ ${label}\n`);
+    return result;
+  } catch (error) {
+    clearInterval(timer);
+    process.stdout.write(`\r✕ ${label}\n`);
+    throw error;
+  }
+}
 
 async function copyProject() {
   await cp(resolve(root, 'bin'), resolve(bundledApp, 'bin'), { recursive: true });
@@ -145,31 +166,31 @@ try rep.representation(using: .png, properties: [:])!.write(to: output)
 }
 
 async function build() {
-  console.log('[1/6] 准备应用目录...');
-  await rm(appRoot, { recursive: true, force: true });
-  await mkdir(macOS, { recursive: true });
-  await mkdir(resources, { recursive: true });
-  console.log('[2/6] 复制应用资源...');
-  await copyProject();
-  console.log('[3/6] 打包 Node.js 运行时...');
-  await bundleNodeRuntime();
-  await writeInfoPlist();
-  console.log('[4/6] 生成应用图标...');
-  await createIcon();
-
-  console.log('[5/6] 编译原生启动器...');
-  await execFileAsync('swiftc', [
-    resolve(root, 'src/native/MacCleanLensApp.swift'),
-    '-o',
-    resolve(macOS, appName),
-    '-framework',
-    'Cocoa',
-    '-framework',
-    'WebKit'
-  ]);
-
-  console.log('[6/6] 签名应用...');
-  await execFileAsync('codesign', ['--force', '--deep', '--sign', '-', appRoot]);
+  await withSpinner('[1/6] 正在准备应用目录', async () => {
+    await rm(appRoot, { recursive: true, force: true });
+    await mkdir(macOS, { recursive: true });
+    await mkdir(resources, { recursive: true });
+  });
+  await withSpinner('[2/6] 正在复制应用资源', copyProject);
+  await withSpinner('[3/6] 正在打包 Node.js 运行时', bundleNodeRuntime);
+  await withSpinner('[4/6] 正在写入配置并生成应用图标', async () => {
+    await writeInfoPlist();
+    await createIcon();
+  });
+  await withSpinner('[5/6] 正在编译原生启动器', async () => {
+    await execFileAsync('swiftc', [
+      resolve(root, 'src/native/MacCleanLensApp.swift'),
+      '-o',
+      resolve(macOS, appName),
+      '-framework',
+      'Cocoa',
+      '-framework',
+      'WebKit'
+    ]);
+  });
+  await withSpinner('[6/6] 正在签名应用', async () => {
+    await execFileAsync('codesign', ['--force', '--deep', '--sign', '-', appRoot]);
+  });
   console.log('✓ 应用构建完成');
   console.log(appRoot);
 }
