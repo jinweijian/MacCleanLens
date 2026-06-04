@@ -1,52 +1,45 @@
 # MacClean Lens
 
-MacClean Lens is a lightweight macOS disk cleanup assistant installed with npm.
+MacClean Lens is a lightweight macOS disk cleanup assistant installed with npm. It scans common cleanup candidates, shows them visually, and moves selected items to Trash only after confirmation.
+
+![MacClean Lens app screenshot](docs/images/mac-clean-lens.png)
+
+## Install
 
 ```bash
 npm install -g mac-clean-lens
-mac-clean-lens
 ```
 
-Install the native Launchpad app after installing the npm package:
+Install the native macOS app into Applications:
 
 ```bash
 mac-clean-lens-install
 ```
 
-Before it is published to npm, install this local build with:
+You can then open it from Launchpad by searching for `MacClean Lens`.
+
+## Usage
+
+Open the visual scanner:
 
 ```bash
-npm install -g ./
 mac-clean-lens
 ```
 
-Build and install the native macOS app into an Applications folder so it appears in Launchpad:
+Other commands:
 
 ```bash
-npm run install:mac
-```
-
-The installer builds `dist/MacClean Lens.app`, generates the app icon, signs the bundle with an ad-hoc local signature, and copies it to `/Applications` when writable. If `/Applications` is not writable, it installs to `~/Applications`.
-
-The MVP starts a local visual UI, scans common cache/log/dependency locations, groups findings by risk, and moves selected low-risk items to Trash only after confirmation.
-
-## Safety
-
-- Cleanable items are allowlisted cache, log, or dependency paths.
-- Manual items such as Docker data, chat app containers, and Android SDK images are shown as recommendations but are not deleted by the one-click cleaner.
-- Cleanup moves selected paths into `~/.Trash/MacCleanLens-<timestamp>/`. Empty Trash manually to actually release disk space.
-
-## CLI
-
-```bash
-mac-clean-lens              # open visual UI
 mac-clean-lens --port 3900  # open UI on a fixed port
 mac-clean-lens --no-open    # start server without opening a browser
 mac-clean-lens scan --json  # print scan report JSON
 mac-clean-lens-install      # install the native Launchpad app
-npm run build:mac           # build dist/MacClean Lens.app
-npm run install:mac         # install the app for Launchpad
 ```
+
+## Safety
+
+- Cleanable items are allowlisted cache, log, dependency, download, or large-file candidates.
+- Manual items such as Docker data, chat app containers, and Android SDK images are shown as recommendations.
+- Cleanup moves selected paths into `~/.Trash/MacCleanLens-<timestamp>/`. Empty Trash manually to actually release disk space.
 
 ## Development
 
@@ -54,4 +47,6 @@ npm run install:mac         # install the app for Launchpad
 npm test
 npm run scan
 npm start
+npm run build:mac
+npm run install:mac
 ```
