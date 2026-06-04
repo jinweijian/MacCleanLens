@@ -28,7 +28,10 @@
               <h1>MacClean Lens</h1>
             </div>
           </div>
-          <button id="scanButton" class="primary">开始扫描</button>
+          <div class="toolbar-actions">
+            <button id="scanModeButton" class="secondary">选择扫描模式</button>
+            <button id="scanButton" class="primary">开始扫描</button>
+          </div>
         </header>
 
         <section class="summary-grid">
@@ -49,17 +52,25 @@
           </article>
         </section>
 
+        <section id="permissionBanner" class="permission-banner" hidden>
+          <div>
+            <strong>部分位置需要额外权限</strong>
+            <p id="permissionDescription"></p>
+          </div>
+          <div id="permissionActions" class="permission-actions"></div>
+        </section>
+
         <section class="category-row" id="categories"></section>
 
         <section class="panel">
           <div class="panel-head">
             <div>
               <h2>扫描结果</h2>
-              <p>只勾选你确认要移动到废纸篓的项目。</p>
+              <p>点击整行选择你确认要移动到废纸篓的项目。</p>
             </div>
             <label class="toggle">
-              <input id="safeOnly" type="checkbox" checked>
-              仅显示可清理
+              <input id="safeOnly" type="checkbox">
+              仅显示可直接清理
             </label>
           </div>
           <div id="findings" class="findings">
@@ -90,6 +101,38 @@
         <button id="cleanButton" class="danger" disabled>立即清理</button>
       </div>
     </footer>
+
+    <dialog id="scanModeDialog" class="scan-mode-dialog">
+      <form method="dialog" class="scan-mode-card">
+        <div>
+          <p class="eyebrow">扫描范围</p>
+          <h2>选择本次扫描模式</h2>
+          <p class="dialog-description">你可以随时通过主界面右上角切换扫描模式。</p>
+        </div>
+        <label class="scan-mode-option">
+          <input type="radio" name="scanMode" value="quick" checked>
+          <span>
+            <strong>快速扫描（推荐）</strong>
+            <small>扫描常见缓存、日志、下载文件和明显的大文件，通常几十秒完成。</small>
+          </span>
+        </label>
+        <label class="scan-mode-option">
+          <input type="radio" name="scanMode" value="deep">
+          <span>
+            <strong>深度扫描</strong>
+            <small>增加设备备份、邮件、信息附件和更多受保护位置，可能耗时数分钟并需要完全磁盘访问权限。</small>
+          </span>
+        </label>
+        <label class="remember-mode">
+          <input id="rememberScanMode" type="checkbox">
+          记住我的选择，下次直接扫描
+        </label>
+        <div class="dialog-buttons">
+          <button id="scanModeCancel" class="secondary" value="cancel">取消</button>
+          <button id="scanModeConfirm" class="primary" value="default">使用此模式</button>
+        </div>
+      </form>
+    </dialog>
 
     <dialog id="celebrationDialog" class="celebration-dialog">
       <div id="confettiLayer" class="confetti-layer" aria-hidden="true"></div>

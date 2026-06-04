@@ -4,6 +4,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { cleanFindings } from '../core/cleaner.mjs';
+import { performScanAction } from '../core/actions.mjs';
 import { scanHome } from '../core/scanner.mjs';
 
 const uiDir = fileURLToPath(new URL('../ui/', import.meta.url));
@@ -53,13 +54,13 @@ async function serveStatic(res, pathname) {
   }
 }
 
-export async function startServer({ home, port = 0, openBrowser = false, fastSize = true } = {}) {
+export async function startServer({ home, port = 0, openBrowser = false, fastSize = true, runOpen } = {}) {
   let lastScan = null;
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://127.0.0.1');
       if (req.method === 'GET' && url.pathname === '/api/scan') {
-        lastScan = await scanHome({ home, fastSize });
+        lastScan = await scanHome({ home, fastSize, mode: url.searchParams.get('mode') || 'quick' });
         sendJson(res, 200, lastScan);
         return;
       }
@@ -72,6 +73,18 @@ export async function startServer({ home, port = 0, openBrowser = false, fastSiz
           home: lastScan.home,
           selectedIds: body.selectedIds || [],
           findings: lastScan.findings
+        });
+        sendJson(res, 200, result);
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/action') {
+        const body = await readJson(req);
+        const result = await performScanAction({
+          report: lastScan,
+          findingId: body.findingId,
+          actionId: body.actionId,
+          settingsTarget: body.settingsTarget,
+          runOpen
         });
         sendJson(res, 200, result);
         return;

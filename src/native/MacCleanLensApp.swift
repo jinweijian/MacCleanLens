@@ -54,17 +54,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate {
             return
         }
         guard let nodePath = findNodeExecutable() else {
-            showError("找不到 Node.js。请先安装 Node.js，或通过 npm install -g /Users/kz/website/mac-clean-lens 使用命令行版本。")
+            showError("找不到可用的 Node.js 运行时。请在终端运行 mac-clean-lens-install 重新安装应用，或直接运行 mac-clean-lens。")
             return
         }
 
         let scriptPath = "\(resourcePath)/app/bin/mac-clean-lens.mjs"
+        let nodeDirectory = URL(fileURLWithPath: nodePath).deletingLastPathComponent().path
         let process = Process()
         process.executableURL = URL(fileURLWithPath: nodePath)
         process.arguments = [scriptPath, "--no-open"]
         process.environment = [
             "HOME": NSHomeDirectory(),
-            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin"
+            "PATH": "\(nodeDirectory):/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin"
         ]
 
         let stdout = Pipe()
@@ -101,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate {
     private func findNodeExecutable() -> String? {
         let home = NSHomeDirectory()
         let candidates = [
+            "\(Bundle.main.bundlePath)/Contents/Resources/runtime/node",
             "\(home)/.volta/bin/node",
             "\(home)/.nvm/current/bin/node",
             "/opt/homebrew/bin/node",

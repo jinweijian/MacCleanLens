@@ -19,6 +19,29 @@ test('macOS build script packages an icon and signs the bundle', async () => {
   assert.match(buildScript, /codesign/);
 });
 
+test('macOS app bundles the Node runtime used during installation', async () => {
+  const buildScript = await readFile(new URL('../scripts/build-macos-app.mjs', import.meta.url), 'utf8');
+  const nativeSource = await readFile(new URL('../src/native/MacCleanLensApp.swift', import.meta.url), 'utf8');
+
+  assert.match(buildScript, /copyFile\(process\.execPath,/);
+  assert.match(buildScript, /chmod\(.*0o755\)/);
+  assert.match(nativeSource, /Contents\/Resources\/runtime\/node/);
+});
+
+test('macOS startup error does not expose a developer machine path', async () => {
+  const nativeSource = await readFile(new URL('../src/native/MacCleanLensApp.swift', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(nativeSource, /\/Users\/kz\/website/);
+});
+
+test('macOS app explains why it requests common folder access', async () => {
+  const buildScript = await readFile(new URL('../scripts/build-macos-app.mjs', import.meta.url), 'utf8');
+
+  assert.match(buildScript, /NSDesktopFolderUsageDescription/);
+  assert.match(buildScript, /NSDocumentsFolderUsageDescription/);
+  assert.match(buildScript, /NSDownloadsFolderUsageDescription/);
+});
+
 test('macOS icon uses a smaller transparent tile without a white border', async () => {
   const buildScript = await readFile(new URL('../scripts/build-macos-app.mjs', import.meta.url), 'utf8');
 
@@ -32,4 +55,15 @@ test('macOS install script installs into an Applications folder for Launchpad', 
   assert.match(installScript, /\/Applications/);
   assert.match(installScript, /Applications/);
   assert.match(installScript, /MacClean Lens\.app/);
+});
+
+test('macOS install and build scripts continuously report progress', async () => {
+  const installScript = await readFile(new URL('../scripts/install-macos-app.mjs', import.meta.url), 'utf8');
+  const buildScript = await readFile(new URL('../scripts/build-macos-app.mjs', import.meta.url), 'utf8');
+
+  assert.match(installScript, /stdio:\s*'inherit'/);
+  assert.match(installScript, /\[1\/3\]/);
+  assert.match(installScript, /\[3\/3\]/);
+  assert.match(buildScript, /\[1\/6\]/);
+  assert.match(buildScript, /\[6\/6\]/);
 });

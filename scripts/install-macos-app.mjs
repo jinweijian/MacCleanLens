@@ -2,7 +2,7 @@
 
 import { access, cp, mkdir, rm } from 'node:fs/promises';
 import { constants } from 'node:fs';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,15 +39,32 @@ async function installInto(applicationsDir) {
   return destination;
 }
 
+async function runBuild() {
+  await new Promise((resolveBuild, rejectBuild) => {
+    const child = spawn('npm', ['run', 'build:mac'], { cwd: root, stdio: 'inherit' });
+    child.once('error', rejectBuild);
+    child.once('exit', (code) => {
+      if (code === 0) {
+        resolveBuild();
+      } else {
+        rejectBuild(new Error(`构建失败，退出码：${code ?? 'unknown'}`));
+      }
+    });
+  });
+}
+
 async function install() {
-  await execFileAsync('npm', ['run', 'build:mac'], { cwd: root, maxBuffer: 1024 * 1024 * 8 });
+  console.log('[1/3] 正在构建 MacClean Lens 应用...');
+  await runBuild();
 
   const systemApplications = '/Applications';
   const userApplications = resolve(homedir(), 'Applications');
   const target = (await canWrite(systemApplications)) ? systemApplications : userApplications;
+  console.log(`[2/3] 正在安装到 ${target}...`);
   const installedPath = await installInto(target);
 
-  console.log(`已安装到 ${installedPath}`);
+  console.log(`[3/3] 已安装到 ${installedPath}`);
+  console.log('✓ MacClean Lens 安装完成');
   console.log('现在可以在启动台搜索 MacClean Lens 打开。');
 }
 

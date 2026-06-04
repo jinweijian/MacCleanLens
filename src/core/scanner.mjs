@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { promisify } from 'node:util';
 
 import { categories, resolveRules, riskLabels } from './rules.mjs';
+import { scanPermissionIssues } from './permissions.mjs';
 import { directorySize, fastDirectorySize, formatBytes } from './size.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -32,8 +33,12 @@ async function diskSummary() {
   }
 }
 
-export async function scanHome({ home = homedir(), fastSize = true } = {}) {
-  const ruleFindings = await resolveRules(home);
+export async function scanHome({ home = homedir(), fastSize = true, mode = 'quick' } = {}) {
+  const scanMode = mode === 'deep' ? 'deep' : 'quick';
+  const [ruleFindings, permissionIssues] = await Promise.all([
+    resolveRules(home, { mode: scanMode }),
+    scanPermissionIssues(home, scanMode)
+  ]);
   const findings = (
     await Promise.all(
       ruleFindings.map(async (finding) => {
@@ -97,7 +102,9 @@ export async function scanHome({ home = homedir(), fastSize = true } = {}) {
 
   return {
     scannedAt: new Date().toISOString(),
+    mode: scanMode,
     home,
+    permissionIssues,
     disk: await diskSummary(),
     summary: {
       totalBytes,

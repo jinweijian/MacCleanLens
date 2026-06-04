@@ -16,6 +16,7 @@ test('server exposes scan API and static UI', async () => {
     const scanResponse = await fetch(`${server.url}/api/scan`);
     const scan = await scanResponse.json();
     assert.equal(scan.summary.totalBytes, 9);
+    assert.equal(scan.mode, 'quick');
 
     const uiResponse = await fetch(server.url);
     const html = await uiResponse.text();
@@ -52,6 +53,10 @@ test('server exposes scan API and static UI', async () => {
     assert.match(js, /AbortController/);
     assert.match(js, /catch \(error\)/);
     assert.match(js, /刷新当前页面数据/);
+    assert.match(js, /\/api\/action/);
+    assert.match(js, /<label class="finding/);
+    assert.match(js, /finding\.cleanable \? ' selectable'/);
+    assert.match(js, /finding\.cleanable \? '' : ' disabled'/);
     assert.doesNotMatch(js, /title: '正在清理'/);
 
     const cssResponse = await fetch(`${server.url}/styles.css`);
@@ -60,6 +65,10 @@ test('server exposes scan API and static UI', async () => {
     assert.match(css, /display:\s*none\s*!important/);
     assert.match(css, /\.summary-card\.filter-card/);
     assert.match(css, /\.category\.active/);
+    assert.match(css, /\.finding\.selectable:hover/);
+    assert.match(css, /\.finding\.selected/);
+    assert.match(css, /\.finding\.disabled/);
+    assert.match(css, /\.finding:focus-within/);
     assert.doesNotMatch(css, /\.sidebar/);
   } finally {
     await server.close();

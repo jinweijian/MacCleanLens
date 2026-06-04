@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +15,7 @@ const contents = resolve(appRoot, 'Contents');
 const macOS = resolve(contents, 'MacOS');
 const resources = resolve(contents, 'Resources');
 const bundledApp = resolve(resources, 'app');
+const bundledNode = resolve(resources, 'runtime', 'node');
 const iconName = 'MacCleanLens.icns';
 
 async function copyProject() {
@@ -25,6 +26,12 @@ async function copyProject() {
   await cp(resolve(root, 'package.json'), resolve(bundledApp, 'package.json'));
   await cp(resolve(root, 'README.md'), resolve(bundledApp, 'README.md'));
   await cp(resolve(root, 'LICENSE'), resolve(bundledApp, 'LICENSE'));
+}
+
+async function bundleNodeRuntime() {
+  await mkdir(dirname(bundledNode), { recursive: true });
+  await copyFile(process.execPath, bundledNode);
+  await chmod(bundledNode, 0o755);
 }
 
 async function writeInfoPlist() {
@@ -54,6 +61,12 @@ async function writeInfoPlist() {
   <string>11.0</string>
   <key>NSHighResolutionCapable</key>
   <true/>
+  <key>NSDesktopFolderUsageDescription</key>
+  <string>MacClean Lens 需要扫描桌面中的大文件，并只清理你明确选择的项目。</string>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>MacClean Lens 需要扫描文稿中的大文件，并只清理你明确选择的项目。</string>
+  <key>NSDownloadsFolderUsageDescription</key>
+  <string>MacClean Lens 需要扫描下载目录中的安装包、归档和大文件，并只清理你明确选择的项目。</string>
 </dict>
 </plist>
 `;
@@ -132,13 +145,19 @@ try rep.representation(using: .png, properties: [:])!.write(to: output)
 }
 
 async function build() {
+  console.log('[1/6] 准备应用目录...');
   await rm(appRoot, { recursive: true, force: true });
   await mkdir(macOS, { recursive: true });
   await mkdir(resources, { recursive: true });
+  console.log('[2/6] 复制应用资源...');
   await copyProject();
+  console.log('[3/6] 打包 Node.js 运行时...');
+  await bundleNodeRuntime();
   await writeInfoPlist();
+  console.log('[4/6] 生成应用图标...');
   await createIcon();
 
+  console.log('[5/6] 编译原生启动器...');
   await execFileAsync('swiftc', [
     resolve(root, 'src/native/MacCleanLensApp.swift'),
     '-o',
@@ -149,7 +168,9 @@ async function build() {
     'WebKit'
   ]);
 
+  console.log('[6/6] 签名应用...');
   await execFileAsync('codesign', ['--force', '--deep', '--sign', '-', appRoot]);
+  console.log('✓ 应用构建完成');
   console.log(appRoot);
 }
 

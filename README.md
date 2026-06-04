@@ -17,6 +17,7 @@ mac-clean-lens-install
 ```
 
 You can then open it from Launchpad by searching for `MacClean Lens`.
+The installer bundles the Node.js runtime currently running npm into the native app, so Launchpad does not depend on your shell `PATH`. Run `mac-clean-lens-install` again after upgrading the package.
 
 ## Usage
 

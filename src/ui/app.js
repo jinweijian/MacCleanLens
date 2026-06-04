@@ -5,9 +5,13 @@ let scanProgressController = null;
 let cleanProgressController = null;
 let thinkingTimer = null;
 let thinkingElement = null;
+let pendingScanAfterModeChoice = false;
+const scanModeStorageKey = 'macCleanLens.scanMode';
+let scanMode = localStorage.getItem(scanModeStorageKey);
 const selected = new Set();
 
 const scanButton = document.querySelector('#scanButton');
+const scanModeButton = document.querySelector('#scanModeButton');
 const cleanButton = document.querySelector('#cleanButton');
 const safeOnly = document.querySelector('#safeOnly');
 const findingsEl = document.querySelector('#findings');
@@ -24,6 +28,12 @@ const cleanProgressLabel = document.querySelector('#cleanProgressLabel');
 const cleanProgressValue = document.querySelector('#cleanProgressValue');
 const cleanProgressBar = document.querySelector('#cleanProgressBar');
 const cleanStatus = document.querySelector('#cleanStatus');
+const permissionBanner = document.querySelector('#permissionBanner');
+const permissionDescription = document.querySelector('#permissionDescription');
+const permissionActions = document.querySelector('#permissionActions');
+const scanModeDialog = document.querySelector('#scanModeDialog');
+const scanModeConfirm = document.querySelector('#scanModeConfirm');
+const rememberScanMode = document.querySelector('#rememberScanMode');
 const celebrationDialog = document.querySelector('#celebrationDialog');
 const celebrationSummary = document.querySelector('#celebrationSummary');
 const celebrationClose = document.querySelector('#celebrationClose');
@@ -47,6 +57,24 @@ function escapeHtml(value) {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;');
+}
+
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) {
+    throw new Error('无法访问剪贴板');
+  }
 }
 
 function delay(ms) {
@@ -235,6 +263,30 @@ function selectedBytes() {
     .reduce((total, finding) => total + finding.bytes, 0);
 }
 
+function scanModeLabel(mode = scanMode) {
+  return mode === 'deep' ? '深度' : '快速';
+}
+
+function updateScanModeButton() {
+  scanModeButton.textContent = scanMode ? `扫描模式：${scanModeLabel()}` : '选择扫描模式';
+}
+
+function updateScanModeOptionStyles() {
+  scanModeDialog.querySelectorAll('.scan-mode-option').forEach((option) => {
+    option.classList.toggle('selected', option.querySelector('input').checked);
+  });
+}
+
+function openScanModeDialog({ scanAfterSelection = false } = {}) {
+  pendingScanAfterModeChoice = scanAfterSelection;
+  const selectedMode = scanMode || 'quick';
+  const input = scanModeDialog.querySelector(`input[name="scanMode"][value="${selectedMode}"]`);
+  if (input) input.checked = true;
+  rememberScanMode.checked = Boolean(localStorage.getItem(scanModeStorageKey));
+  updateScanModeOptionStyles();
+  scanModeDialog.showModal();
+}
+
 function renderActionState() {
   document.querySelector('#selectedSize').textContent = `已选择 ${formatBytes(selectedBytes())}`;
   cleanButton.disabled = selected.size === 0 || isCleaning;
@@ -248,9 +300,23 @@ function renderSummary() {
   }
   document.querySelector('#cleanableSize').textContent = report.summary.cleanableLabel;
   document.querySelector('#findingCount').textContent = `${report.summary.findingCount} 项`;
-  document.querySelector('#scanTime').textContent = new Date(report.scannedAt).toLocaleString();
+  document.querySelector('#scanTime').textContent = `${scanModeLabel(report.mode)}扫描 · ${new Date(report.scannedAt).toLocaleString()}`;
   document.querySelector('#availableSize').textContent = report.disk?.availableLabel || '--';
   document.querySelector('#capacityLabel').textContent = report.disk ? `已用 ${report.disk.capacity}` : '磁盘信息不可用';
+}
+
+function renderPermissionIssues() {
+  const issues = Array.isArray(report?.permissionIssues) ? report.permissionIssues : [];
+  permissionBanner.hidden = issues.length === 0;
+  if (issues.length === 0) return;
+  permissionDescription.textContent = issues.map((issue) => issue.description).join(' ');
+  permissionActions.innerHTML = issues
+    .map((issue) => `
+      <button class="secondary permission-action" data-settings-target="${escapeHtml(issue.settingsTarget)}">
+        ${escapeHtml(issue.title)}
+      </button>
+    `)
+    .join('');
 }
 
 function renderCategories() {
@@ -284,9 +350,18 @@ function renderFindings() {
   }
 
   findingsEl.innerHTML = findings
-    .map((finding) => `
-      <article class="finding">
-        <input type="checkbox" data-id="${escapeHtml(finding.id)}" ${finding.cleanable ? '' : 'disabled'} ${selected.has(finding.id) ? 'checked' : ''}>
+    .map((finding) => {
+      const selectableClass = finding.cleanable ? ' selectable' : '';
+      const selectedClass = selected.has(finding.id) ? ' selected' : '';
+      const disabledClass = finding.cleanable ? '' : ' disabled';
+      const findingActions = (finding.actions || [])
+        .map((action) => `
+          <button class="finding-action" data-finding-id="${escapeHtml(finding.id)}" data-action-id="${escapeHtml(action.id)}">
+            ${escapeHtml(action.label)}
+          </button>
+        `)
+        .join('');
+      const content = `
         <div>
           <h3>${escapeHtml(finding.title)}</h3>
           <p>${escapeHtml(finding.description)}</p>
@@ -296,10 +371,20 @@ function renderFindings() {
             <span class="badge ${escapeHtml(finding.risk)}">${escapeHtml(finding.riskLabel)}</span>
             <span class="badge">${finding.cleanable ? '可加入清理列表' : '仅建议'}</span>
           </div>
+          ${findingActions ? `<div class="finding-actions">${findingActions}</div>` : ''}
         </div>
         <span class="size">${escapeHtml(finding.sizeLabel)}</span>
-      </article>
-    `)
+      `;
+      if (finding.cleanable) {
+        return `
+          <label class="finding${selectableClass}${selectedClass}">
+            <input type="checkbox" data-id="${escapeHtml(finding.id)}" ${selected.has(finding.id) ? 'checked' : ''}>
+            ${content}
+          </label>
+        `;
+      }
+      return `<article class="finding${disabledClass}"><span class="manual-marker">!</span>${content}</article>`;
+    })
     .join('');
 }
 
@@ -422,6 +507,7 @@ function showCelebrationDialog({ movedCount, skippedCount, failedCount }) {
 function render() {
   if (!report) return;
   renderSummary();
+  renderPermissionIssues();
   renderCategories();
   renderFilterSelection();
   renderFindings();
@@ -464,19 +550,22 @@ summaryFilterCards.forEach((card) => {
 categoriesEl.addEventListener('click', handleFilterActivation);
 categoriesEl.addEventListener('keydown', handleFilterKeydown);
 
-scanButton.addEventListener('click', async () => {
+async function runScan() {
+  const mode = scanMode || 'quick';
   scanButton.disabled = true;
   scanButton.textContent = '扫描中...';
   selected.clear();
   hideActionMessage();
   beginProgressLoop({
-    title: '正在扫描磁盘',
-    labels: ['正在读取磁盘剩余空间', '正在统计缓存目录大小', '正在识别可清理风险等级', '正在整理页面数据'],
+    title: `正在进行${scanModeLabel(mode)}扫描`,
+    labels: mode === 'deep'
+      ? ['正在检查受保护位置权限', '正在扫描设备备份和应用数据', '正在统计缓存与附件大小', '正在整理页面数据']
+      : ['正在读取磁盘剩余空间', '正在统计常见缓存和日志', '正在识别可清理风险等级', '正在整理页面数据'],
     start: 10,
     ceiling: 94
   });
   try {
-    report = await requestJson('/api/scan', { timeoutMs: 120000 });
+    report = await requestJson(`/api/scan?mode=${mode}`, { timeoutMs: mode === 'deep' ? 300000 : 120000 });
     render();
     await finishGlobalOverlay('扫描完成');
   } catch (error) {
@@ -490,17 +579,80 @@ scanButton.addEventListener('click', async () => {
     scanButton.disabled = false;
     scanButton.textContent = '重新扫描';
   }
+}
+
+scanButton.addEventListener('click', () => {
+  if (!scanMode) {
+    openScanModeDialog({ scanAfterSelection: true });
+    return;
+  }
+  runScan();
+});
+
+scanModeButton.addEventListener('click', () => openScanModeDialog());
+scanModeDialog.addEventListener('change', updateScanModeOptionStyles);
+scanModeConfirm.addEventListener('click', (event) => {
+  event.preventDefault();
+  const nextMode = scanModeDialog.querySelector('input[name="scanMode"]:checked')?.value || 'quick';
+  scanMode = nextMode === 'deep' ? 'deep' : 'quick';
+  if (rememberScanMode.checked) {
+    localStorage.setItem(scanModeStorageKey, scanMode);
+  } else {
+    localStorage.removeItem(scanModeStorageKey);
+  }
+  updateScanModeButton();
+  scanModeDialog.close();
+  if (pendingScanAfterModeChoice) {
+    pendingScanAfterModeChoice = false;
+    runScan();
+  }
 });
 
 findingsEl.addEventListener('change', (event) => {
   const id = event.target?.dataset?.id;
   if (!id) return;
+  event.target.closest('.finding')?.classList.toggle('selected', event.target.checked);
   if (event.target.checked) {
     selected.add(id);
   } else {
     selected.delete(id);
   }
   renderSummary();
+});
+
+findingsEl.addEventListener('click', async (event) => {
+  const button = event.target.closest('.finding-action');
+  if (!button) return;
+  event.preventDefault();
+  event.stopPropagation();
+  try {
+    const result = await requestJson('/api/action', {
+      method: 'POST',
+      body: {
+        findingId: button.dataset.findingId,
+        actionId: button.dataset.actionId
+      }
+    });
+    if (result.copyValue) {
+      await copyText(result.copyValue);
+      alert(`已复制命令：${result.copyValue}`);
+    }
+  } catch (error) {
+    alert(`无法执行操作：${error?.message || '未知错误'}`);
+  }
+});
+
+permissionActions.addEventListener('click', async (event) => {
+  const button = event.target.closest('.permission-action');
+  if (!button) return;
+  try {
+    await requestJson('/api/action', {
+      method: 'POST',
+      body: { settingsTarget: button.dataset.settingsTarget }
+    });
+  } catch (error) {
+    alert(`无法打开系统设置：${error?.message || '未知错误'}`);
+  }
 });
 
 safeOnly.addEventListener('change', renderFindings);
@@ -562,7 +714,7 @@ cleanButton.addEventListener('click', async () => {
       labelIntervalMs: 2600,
       halfLifeMs: 5200
     });
-    report = await requestJson('/api/scan', { timeoutMs: 120000 });
+    report = await requestJson(`/api/scan?mode=${scanMode || report?.mode || 'quick'}`, { timeoutMs: 300000 });
     render();
     await cleanProgressController.finish({
       label: '清理完成，页面已刷新',
@@ -601,3 +753,5 @@ celebrationDialog.addEventListener('click', (event) => {
     hideCelebrationDialog();
   }
 });
+
+updateScanModeButton();
